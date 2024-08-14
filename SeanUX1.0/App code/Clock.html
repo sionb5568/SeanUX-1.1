@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .time {
+            font-size: 6rem;
+            font-weight: 300;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+        .date {
+            font-size: 1.5rem;
+            margin-top: 0.5rem;
+            color: #aaa;
+        }
+        .menu {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        .menu-item {
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        .menu-item:hover, .menu-item.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .world-clock, .timer, .stopwatch {
+            display: none;
+        }
+        .world-clock.active, .timer.active, .stopwatch.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .world-clock-item, .timer-display, .stopwatch-display {
+            font-size: 2.5rem;
+            margin: 1rem 0;
+            background: linear-gradient(45deg, #da800a, #fad0c4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(255,154,158,0.5);
+        }
+        .world-clock-item {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 400px;
+            padding: 0.5rem 1rem;
+            background-color: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin: 0.5rem 0;
+        }
+        button {
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0.5rem;
+            font-weight: 500;
+        }
+        button:hover {
+            background-color: #0077ed;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        input[type="number"] {
+            background-color: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            margin: 0.5rem;
+            width: 60px;
+            text-align: center;
+        }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .timer-inputs {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .timer-inputs span {
+            font-size: 1.2rem;
+            margin: 0 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="clock" class="active">
+            <div class="time" id="time"></div>
+            <div class="date" id="date"></div>
+        </div>
+        
+        <div id="worldClock" class="world-clock">
+            <h2>World Clock</h2>
+            <div class="world-clock-item" id="newYork"></div>
+            <div class="world-clock-item" id="london"></div>
+            <div class="world-clock-item" id="tokyo"></div>
+            <div class="world-clock-item" id="sydney"></div>
+        </div>
+        
+        <div id="timer" class="timer">
+            <h2>Timer</h2>
+            <div class="timer-inputs">
+                <input type="number" id="hours" min="0" max="23" value="0">
+                <span>:</span>
+                <input type="number" id="minutes" min="0" max="59" value="0">
+                <span>:</span>
+                <input type="number" id="seconds" min="0" max="59" value="0">
+            </div>
+            <div class="timer-display" id="timerDisplay">00:00:00</div>
+            <button id="startTimer">Start</button>
+            <button id="stopTimer">Stop</button>
+            <button id="resetTimer">Reset</button>
+        </div>
+        
+        <div id="stopwatch" class="stopwatch">
+            <h2>Stopwatch</h2>
+            <div class="stopwatch-display" id="stopwatchDisplay">00:00:00</div>
+            <button id="startStopwatch">Start</button>
+            <button id="stopStopwatch">Stop</button>
+            <button id="resetStopwatch">Reset</button>
+        </div>
+    </div>
+
+    <div class="menu">
+        <div class="menu-item active" data-target="clock">Clock</div>
+        <div class="menu-item" data-target="worldClock">World Clock</div>
+        <div class="menu-item" data-target="timer">Timer</div>
+        <div class="menu-item" data-target="stopwatch">Stopwatch</div>
+    </div>
+
+    <script>
+        // Clock functionality
+        function updateClock() {
+            const now = new Date();
+            const timeElement = document.getElementById('time');
+            const dateElement = document.getElementById('date');
+
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dateElement.textContent = now.toLocaleDateString('en-US', options);
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // World Clock functionality
+        function updateWorldClock() {
+            const now = new Date();
+            
+            const formatTime = (date) => {
+                return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            };
+
+            const updateCity = (city, timezone) => {
+                const time = new Date(now.toLocaleString("en-US", {timeZone: timezone}));
+                document.getElementById(city).innerHTML = `
+                    <span>${city.charAt(0).toUpperCase() + city.slice(1)}</span>
+                    <span>${formatTime(time)}</span>
+                `;
+            };
+
+            updateCity('newYork', "America/New_York");
+            updateCity('london', "Europe/London");
+            updateCity('tokyo', "Asia/Tokyo");
+            updateCity('sydney', "Australia/Sydney");
+        }
+
+        setInterval(updateWorldClock, 1000);
+        updateWorldClock();
+
+        // Timer functionality
+        let timerInterval;
+        let timerTime = 0;
+        const timerDisplay = document.getElementById('timerDisplay');
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        
+        document.getElementById('startTimer').addEventListener('click', function() {
+            clearInterval(timerInterval);
+            timerTime = (parseInt(hoursInput.value) * 3600) + (parseInt(minutesInput.value) * 60) + parseInt(secondsInput.value);
+            if (timerTime > 0) {
+                timerInterval = setInterval(function() {
+                    if (timerTime > 0) {
+                        timerTime--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        alert("Timer finished!");
+                    }
+                }, 1000);
+            }
+        });
+
+        document.getElementById('stopTimer').addEventListener('click', function() {
+            clearInterval(timerInterval);
+        });
+
+        document.getElementById('resetTimer').addEventListener('click', function() {
+            clearInterval(timerInterval);
+            timerTime = 0;
+            hoursInput.value = 0;
+            minutesInput.value = 0;
+            secondsInput.value = 0;
+            updateTimerDisplay();
+        });
+
+        function updateTimerDisplay() {
+            const hours = Math.floor(timerTime / 3600);
+            const minutes = Math.floor((timerTime % 3600) / 60);
+            const seconds = timerTime % 60;
+            timerDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Stopwatch functionality
+        let stopwatchInterval;
+        let stopwatchTime = 0;
+        const stopwatchDisplay = document.getElementById('stopwatchDisplay');
+        
+        document.getElementById('startStopwatch').addEventListener('click', function() {
+            clearInterval(stopwatchInterval);
+            stopwatchInterval = setInterval(function() {
+                stopwatchTime++;
+                updateStopwatchDisplay();
+            }, 1000);
+        });
+
+        document.getElementById('stopStopwatch').addEventListener('click', function() {
+            clearInterval(stopwatchInterval);
+        });
+
+        document.getElementById('resetStopwatch').addEventListener('click', function() {
+            clearInterval(stopwatchInterval);
+            stopwatchTime = 0;
+            updateStopwatchDisplay();
+        });
+
+        function updateStopwatchDisplay() {
+            const hours = Math.floor(stopwatchTime / 3600);
+            const minutes = Math.floor((stopwatchTime % 3600) / 60);
+            const seconds = stopwatchTime % 60;
+            stopwatchDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Menu functionality
+        const menuItems = document.querySelectorAll('.menu-item');
+        const sections = document.querySelectorAll('.container > div');
+
+        menuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const target = this.getAttribute('data-target');
+                
+                menuItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === target) {
+                        section.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
